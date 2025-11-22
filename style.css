@@ -77,3 +77,10 @@ body{
 #text-animate{
     color: var(--primary) !important;
 }
+
+.main-text>p{
+        position: relative;
+        bottom: -150px;
+        font-size: 15px;
+        color: #000000;
+}

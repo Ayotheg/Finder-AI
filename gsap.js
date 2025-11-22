@@ -14,3 +14,8 @@ words.forEach(word => {
     });
 });
 
+gsap.to("#text-slide",{
+  duration:1,
+  delay:0,
+  y:-30
+});
