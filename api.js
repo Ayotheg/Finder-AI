@@ -1,5 +1,5 @@
 // API Configuration
-const API_URL = 'http://localhost:5000/api/analyze'; // Change this to your deployed backend URL
+const API_URL = 'https://finder-backend-v1i2.onrender.com'; // Change this to your deployed backend URL
 
 let cameraStream = null;
 
