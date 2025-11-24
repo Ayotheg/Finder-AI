@@ -1,5 +1,5 @@
 // API Configuration
-const API_URL = 'https://finder-backend-v1i2.onrender.com'; // Change this to your deployed backend URL
+const API_URL = 'https://finder-backend-v1i2.onrender.com/api/analyze'; // ← ADD /api/analyze
 
 let cameraStream = null;
 
@@ -84,73 +84,4 @@ async function sendImageToAPI(imageFile, prompt) {
   const resultContainer = document.getElementById('result-container');
   
   // Hide previous results
-  resultContainer.style.display = 'none';
-  
-  // Show loading
-  loading.style.display = 'flex';
-
-  try {
-    // Create FormData
-    const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('prompt', prompt);
-
-    // Send to backend
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `API Error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    // Hide loading
-    loading.style.display = 'none';
-    
-    // Display results
-    displayResults(result);
-
-  } catch (error) {
-    loading.style.display = 'none';
-    alert(`Error: ${error.message}`);
-    console.error('API Error:', error);
-  }
-}
-
-// Display results
-function displayResults(data) {
-  const resultContainer = document.getElementById('result-container');
-  const resultImage = document.getElementById('result-image');
-  const detectionInfo = document.getElementById('detection-info');
-
-  // Show annotated image
-  if (data.annotated_image) {
-    resultImage.src = `data:image/jpeg;base64,${data.annotated_image}`;
-  }
-
-  // Display detection information
-  let infoHTML = '<h4 style="margin-top:0;">Detected Objects:</h4>';
-  
-  if (data.detections && data.detections.length > 0) {
-    data.detections.forEach((detection, index) => {
-      infoHTML += `
-        <div class="detection-item">
-          <strong>${detection.class}</strong> 
-          (Confidence: ${(detection.confidence * 100).toFixed(1)}%)
-        </div>
-      `;
-    });
-  } else {
-    infoHTML += '<p style="color: #999;">No objects detected matching your prompt.</p>';
-  }
-
-  detectionInfo.innerHTML = infoHTML;
-  resultContainer.style.display = 'block';
-
-  // Scroll to results
-  resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
+  resultContainer.style.display = 'none'
