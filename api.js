@@ -68,7 +68,7 @@ async function capturePhoto() {
   const context = canvas.getContext('2d');
   context.drawImage(video, 0, 0);
   
-  // Convert canvas to blob
+  // Convert canvas to blob-u 
   canvas.toBlob(async (blob) => {
     const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
     const prompt = document.getElementById('search-prompt').value.trim();
@@ -84,4 +84,35 @@ async function sendImageToAPI(imageFile, prompt) {
   const resultContainer = document.getElementById('result-container');
   
   // Hide previous results
-  resultContainer.style.display = 'none'
+  resultContainer.style.display = 'none';
+  if (loading) loading.style.display = 'block';
+
+  try {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    formData.append('prompt', prompt);
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Render results (basic default rendering; adapt to your UI structure)
+    resultContainer.innerHTML = '';
+    const pre = document.createElement('pre');
+    pre.textContent = JSON.stringify(data, null, 2);
+    resultContainer.appendChild(pre);
+    resultContainer.style.display = 'block';
+  } catch (error) {
+    console.error('API error:', error);
+    alert('An error occurred while analyzing the image. Please try again.');
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
+}
