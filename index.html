@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="redirect.css">
     <link rel="stylesheet" href="upload.css">
-    <script src="script.js"></script>
+    <!-- ❌ REMOVE THIS LINE -->
+    <!-- <script src="script.js"></script> -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 </head>
@@ -26,7 +27,6 @@
       <!-- Optional: Add QR Code here -->
       <div class="qr-hint">
         <p>📱 Scan with your phone:</p>
-        <!-- <img src="qr-code.png" alt="QR Code" style="width: 150px; margin-top: 10px;"> -->
         <p style="color: #FF6B00; font-weight: bold; margin-top: 10px;">
           Or visit: https://ayotheg.github.io/welderskit
         </p>
@@ -35,112 +35,111 @@
       <footer>© 2025 Welders Toolkit</footer>
     </div>
   </div>
+  
   <!-- Mobile Content -->
-<div class="mobile-content">
+  <div class="mobile-content">
     <div class="container-fluid">
 
-<nav class="navbar navbar-expand-lg" style="background-color: #00FF7F; position: sticky; margin-top:-300px">
-  <div class="container-fluid">
-    <a class="navbar-brand navbar-text" href="#" style="color: #ffffff; font-family: 'Poppins', sans-serif; font-weight: 600 !important; padding: 10px 70px; justify-content: center; margin-left:-40px">Finder AI</a>
-        <div class="navbar-menu">
-    <button class="navbar-toggler menu-icon" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" style="margin-left:-70px; color: #000000; gap:70px;">
-      <span class="navbar-toggler-icon  menu-icon-2"></span>
-    </button>
-    </div>
-    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ms-0 mb-2 mb-lg-0 menu-list navbar-text-a">
-        <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="#">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Dropdown
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#">Action</a></li>
-            <li><a class="dropdown-item" href="#">Another action</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="#">Something else here</a></li>
-          </ul>
-        </li>
-      </ul>
-    </div>
-  </div>
-</nav>
+      <nav class="navbar navbar-expand-lg" style="background-color: #00FF7F; position: sticky; margin-top:-300px">
+        <div class="container-fluid">
+          <a class="navbar-brand navbar-text" href="#" style="color: #ffffff; font-family: 'Poppins', sans-serif; font-weight: 600 !important; padding: 10px 70px; justify-content: center; margin-left:-40px">Finder AI</a>
+          <div class="navbar-menu">
+            <button class="navbar-toggler menu-icon" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" style="margin-left:-70px; color: #000000; gap:70px;">
+              <span class="navbar-toggler-icon  menu-icon-2"></span>
+            </button>
+          </div>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ms-0 mb-2 mb-lg-0 menu-list navbar-text-a">
+              <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="#">Home</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Link</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Dropdown
+                </a>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#">Action</a></li>
+                  <li><a class="dropdown-item" href="#">Another action</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="#">Something else here</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
 
-
-    <div class="main-text">
-        <h2 >Search for<span id="text-animate">Items</span><br> with just a prompt</h2>
-  
-
-            <p id="text-slide">
-This application utilizes a custom-trained Segment Anything Model 3 (SAM 3).
-It's a powerful vision model that performs promptable segmentation.
-</p>
-  
-    </div>
-
-    <!-- Upload and Camera Section -->
-    <div class="upload-section">
-      <!-- Prompt Input -->
-      <div class="prompt-container">
-        <label for="search-prompt">What are you looking for?</label>
-        <input type="text" id="search-prompt" placeholder="e.g., Find the brush and book" />
+      <div class="main-text">
+        <h2>Search for<span id="text-animate">Items</span><br> with just a prompt</h2>
+        <p id="text-slide">
+          This application utilizes a custom-trained Segment Anything Model 3 (SAM 3).
+          It's a powerful vision model that performs promptable segmentation.
+        </p>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="action-buttons">
-        <button class="action-btn upload-btn" onclick="triggerFileUpload()">
-          <i class="bi bi-cloud-upload"></i>
-          Upload Image
-        </button>
-        <button class="action-btn camera-btn" onclick="openCamera()">
-          <i class="bi bi-camera"></i>
-          Take Photo
-        </button>
-      </div>
+      <!-- Upload and Camera Section -->
+      <div class="upload-section">
+        <!-- Prompt Input -->
+        <div class="prompt-container">
+          <label for="search-prompt">What are you looking for?</label>
+          <input type="text" id="search-prompt" placeholder="e.g., Find the brush and book" />
+        </div>
 
-      <!-- Hidden File Input -->
-      <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(event)" />
-
-      <!-- Camera Modal -->
-      <div id="camera-modal" class="camera-modal" style="display: none;">
-        <div class="camera-content">
-          <button class="close-camera" onclick="closeCamera()">×</button>
-          <video id="camera-stream" autoplay playsinline></video>
-          <button class="capture-btn" onclick="capturePhoto()">
-            <i class="bi bi-camera-fill"></i> Capture
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button class="action-btn upload-btn" onclick="triggerFileUpload()">
+            <i class="bi bi-cloud-upload"></i>
+            Upload Image
           </button>
+          <button class="action-btn camera-btn" onclick="openCamera()">
+            <i class="bi bi-camera"></i>
+            Take Photo
+          </button>
+        </div>
+
+        <!-- Hidden File Input -->
+        <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(event)" />
+
+        <!-- Camera Modal -->
+        <div id="camera-modal" class="camera-modal" style="display: none;">
+          <div class="camera-content">
+            <button class="close-camera" onclick="closeCamera()">×</button>
+            <video id="camera-stream" autoplay playsinline></video>
+            <button class="capture-btn" onclick="capturePhoto()">
+              <i class="bi bi-camera-fill"></i> Capture
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading" style="display: none;">
+          <div class="spinner"></div>
+          <p>Analyzing image...</p>
+        </div>
+
+        <!-- Result Display -->
+        <div id="result-container" class="result-container" style="display: none;">
+          <h3>Detection Results</h3>
+          <img id="result-image" alt="Annotated Result" />
+          <div id="detection-info"></div>
         </div>
       </div>
 
-      <!-- Loading Indicator -->
-      <div id="loading" class="loading" style="display: none;">
-        <div class="spinner"></div>
-        <p>Analyzing image...</p>
-      </div>
-
-      <!-- Result Display -->
-      <div id="result-container" class="result-container" style="display: none;">
-        <h3>Detection Results</h3>
-        <img id="result-image" alt="Annotated Result" />
-        <div id="detection-info"></div>
-      </div>
     </div>
+  </div>
 
-    </div>
-</div>
-
- <!-- Scripts -->
+  <!-- Scripts - Load in correct order at the END -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/TextPlugin.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
-  <script src="script.js"></script>
-  <script src="gsap.js"></script>
-  <script src="api.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- ✅ Your scripts AFTER libraries -->
+  <script src="api.js"></script>      <!-- Load API functions first -->
+  <script src="script.js"></script>   <!-- Then other scripts -->
+  <script src="gsap.js"></script>     <!-- Then animations -->
 </body>
 </html>
