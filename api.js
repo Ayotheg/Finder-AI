@@ -156,7 +156,7 @@ function displayResults(data) {
   }
 
   // Display detection information
-  let infoHTML = '<h4 style="margin-top:0;">🎯 Detected Objects:</h4>';
+  let infoHTML = '<h4 style="margin-top:0;">Detected Objects:</h4>';
   
   if (data.detections && data.detections.length > 0) {
     data.detections.forEach((detection, index) => {
