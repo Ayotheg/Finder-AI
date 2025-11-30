@@ -14,21 +14,15 @@ async function handleFileUpload(event) {
   if (!file) return;
 
   const prompt = document.getElementById('search-prompt').value.trim();
-  if (!prompt) {
-    alert('Please enter what you are looking for first!');
-    return;
-  }
-
+  // REMOVED PROMPT REQUIREMENT - now optional
+  
   await sendImageToAPI(file, prompt);
 }
 
 // Open camera
 async function openCamera() {
   const prompt = document.getElementById('search-prompt').value.trim();
-  if (!prompt) {
-    alert('Please enter what you are looking for first!');
-    return;
-  }
+  // REMOVED PROMPT REQUIREMENT - now optional
 
   const modal = document.getElementById('camera-modal');
   const video = document.getElementById('camera-stream');
@@ -93,7 +87,7 @@ async function sendImageToAPI(imageFile, prompt) {
     // Create FormData
     const formData = new FormData();
     formData.append('image', imageFile);
-    formData.append('prompt', prompt);
+    formData.append('prompt', prompt); // Can be empty now
 
     // Send to backend
     const response = await fetch(API_URL, {
@@ -155,8 +149,26 @@ function displayResults(data) {
     resultImage.style.display = 'none';
   }
 
-  // Display detection information
-  let infoHTML = '<h4 style="margin-top:0;">Detected Objects:</h4>';
+  // Display detection information with filter status handling
+  let infoHTML = '';
+  
+  // Show message from backend
+  if (data.message) {
+    const isWarning = data.filter_status === 'no_match';
+    const messageColor = isWarning ? '#ff9800' : '#00FF7F';
+    const messageIcon = isWarning ? '⚠️' : '✓';
+    
+    infoHTML += `
+      <div style="padding: 12px; margin-bottom: 15px; background: ${isWarning ? '#fff3e0' : '#e8f5e9'}; 
+                  border-left: 4px solid ${messageColor}; border-radius: 8px;">
+        <p style="margin: 0; color: #333; font-weight: 500;">
+          ${messageIcon} ${data.message}
+        </p>
+      </div>
+    `;
+  }
+  
+  infoHTML += '<h4 style="margin-top:0;">Detected Objects:</h4>';
   
   if (data.detections && data.detections.length > 0) {
     data.detections.forEach((detection, index) => {
@@ -168,9 +180,34 @@ function displayResults(data) {
       `;
     });
     
-    infoHTML += `<p style="color: #999; margin-top: 10px;">Total: ${data.filtered_detections} of ${data.total_detections} objects shown</p>`;
+    infoHTML += `<p style="color: #999; margin-top: 10px;">
+      ${data.filtered_detections} of ${data.total_detections} objects shown
+    </p>`;
+    
+    // Show what classes are available if filter didn't match
+    if (data.filter_status === 'no_match' && data.detected_classes) {
+      infoHTML += `
+        <div style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px;">
+          <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">
+            💡 <strong>Tip:</strong> Model can detect:
+          </p>
+          <p style="margin: 0; font-size: 12px; color: #999;">
+            ${data.detected_classes.join(', ')}
+          </p>
+        </div>
+      `;
+    }
   } else {
-    infoHTML += '<p style="color: #999;">❌ No objects detected matching your prompt.</p>';
+    infoHTML += '<p style="color: #999;">❌ No objects detected in the image.</p>';
+    
+    // Show model capabilities if available
+    if (data.detected_classes && data.detected_classes.length === 0) {
+      infoHTML += `
+        <p style="color: #666; font-size: 14px; margin-top: 10px;">
+          💡 Try taking a clearer photo or ensure the object is well-lit and in frame.
+        </p>
+      `;
+    }
   }
 
   detectionInfo.innerHTML = infoHTML;
