@@ -14,16 +14,13 @@ async function handleFileUpload(event) {
   if (!file) return;
 
   const prompt = document.getElementById('search-prompt').value.trim();
-  // REMOVED PROMPT REQUIREMENT - now optional
   
+  // Prompt is now optional - backend will use "all objects" as default
   await sendImageToAPI(file, prompt);
 }
 
 // Open camera
 async function openCamera() {
-  const prompt = document.getElementById('search-prompt').value.trim();
-  // REMOVED PROMPT REQUIREMENT - now optional
-
   const modal = document.getElementById('camera-modal');
   const video = document.getElementById('camera-stream');
 
@@ -84,25 +81,40 @@ async function sendImageToAPI(imageFile, prompt) {
   if (loading) loading.style.display = 'flex';
 
   try {
-    // Create FormData
+    // Create FormData - CRITICAL: Match backend expectations
     const formData = new FormData();
     formData.append('image', imageFile);
-    formData.append('prompt', prompt); // Can be empty now
+    
+    // Send prompt even if empty - backend handles default
+    formData.append('prompt', prompt || '');
+
+    console.log('Sending request...');
+    console.log('Prompt:', prompt || '(empty - will use default)');
 
     // Send to backend
     const response = await fetch(API_URL, {
       method: 'POST',
-      body: formData
+      body: formData,
+      // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
     });
 
+    console.log('Response status:', response.status);
+
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `API Error: ${response.status}`);
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (e) {
+        errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
+      console.error('API Error:', errorData);
+      throw new Error(errorData.error || errorData.message || `API Error: ${response.status}`);
     }
 
     const result = await response.json();
     
-    console.log('API Response:', result); // DEBUG
+    console.log('API Response:', result);
     
     // Hide loading
     if (loading) loading.style.display = 'none';
@@ -112,8 +124,15 @@ async function sendImageToAPI(imageFile, prompt) {
 
   } catch (error) {
     if (loading) loading.style.display = 'none';
-    alert(`Error: ${error.message}`);
-    console.error('API Error:', error);
+    
+    // More detailed error messages
+    let errorMsg = error.message;
+    if (error.message.includes('Failed to fetch')) {
+      errorMsg = 'Cannot connect to backend. Please check if the server is running.';
+    }
+    
+    alert(`Error: ${errorMsg}`);
+    console.error('Full error:', error);
   }
 }
 
@@ -123,20 +142,25 @@ function displayResults(data) {
   const resultImage = document.getElementById('result-image');
   const detectionInfo = document.getElementById('detection-info');
 
-  console.log('Displaying results:', data); // DEBUG
+  console.log('Displaying results:', data);
 
   // Show annotated image
   if (data.annotated_image) {
     const base64String = data.annotated_image.trim();
     
-    // Try PNG first (most common for annotations)
-    resultImage.src = `data:image/png;base64,${base64String}`;
+    // Remove data URL prefix if present
+    const cleanBase64 = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    // Try PNG first (most common for SAM3 mask visualizations)
+    resultImage.src = `data:image/png;base64,${cleanBase64}`;
     resultImage.style.display = 'block';
+    
+    console.log('Loading annotated image...');
     
     // Error handler if image fails to load
     resultImage.onerror = function() {
       console.warn('Failed to load as PNG, trying JPEG...');
-      resultImage.src = `data:image/jpeg;base64,${base64String}`;
+      resultImage.src = `data:image/jpeg;base64,${cleanBase64}`;
       
       resultImage.onerror = function() {
         console.error('Failed to load annotated image');
@@ -144,22 +168,28 @@ function displayResults(data) {
         detectionInfo.innerHTML = '<p style="color: red;">⚠️ Could not load annotated image</p>';
       };
     };
+    
+    resultImage.onload = function() {
+      console.log('✓ Annotated image loaded successfully');
+    };
   } else {
     console.warn('No annotated_image in response');
     resultImage.style.display = 'none';
   }
 
-  // Display detection information with filter status handling
+  // Display detection information
   let infoHTML = '';
   
-  // Show message from backend
+  // Show main message from backend
   if (data.message) {
-    const isWarning = data.filter_status === 'no_match';
-    const messageColor = isWarning ? '#ff9800' : '#00FF7F';
-    const messageIcon = isWarning ? '⚠️' : '✓';
+    // Determine if this is a "not found" scenario
+    const isNotFound = data.total_detections === 0;
+    const messageColor = isNotFound ? '#ff9800' : '#00FF7F';
+    const messageIcon = isNotFound ? '❌' : '✓';
+    const bgColor = isNotFound ? '#fff3e0' : '#e8f5e9';
     
     infoHTML += `
-      <div style="padding: 12px; margin-bottom: 15px; background: ${isWarning ? '#fff3e0' : '#e8f5e9'}; 
+      <div style="padding: 12px; margin-bottom: 15px; background: ${bgColor}; 
                   border-left: 4px solid ${messageColor}; border-radius: 8px;">
         <p style="margin: 0; color: #333; font-weight: 500;">
           ${messageIcon} ${data.message}
@@ -168,46 +198,33 @@ function displayResults(data) {
     `;
   }
   
-  infoHTML += '<h4 style="margin-top:0;">Detected Objects:</h4>';
-  
+  // Show detection details
   if (data.detections && data.detections.length > 0) {
+    infoHTML += '<h4 style="margin-top:0;">Detected Objects:</h4>';
+    
     data.detections.forEach((detection, index) => {
+      const confidence = detection.confidence || 1.0;
+      const className = detection.class || data.prompt || 'object';
+      
       infoHTML += `
         <div class="detection-item" style="padding: 10px; margin: 5px 0; background: #f5f5f5; border-radius: 8px;">
-          <strong style="color: #00FF7F;">${detection.class}</strong> 
-          <span style="color: #666;">(Confidence: ${(detection.confidence * 100).toFixed(1)}%)</span>
+          <strong style="color: #00FF7F;">${className}</strong> 
+          <span style="color: #666;">(Confidence: ${(confidence * 100).toFixed(1)}%)</span>
         </div>
       `;
     });
     
-    infoHTML += `<p style="color: #999; margin-top: 10px;">
-      ${data.filtered_detections} of ${data.total_detections} objects shown
+    // Show count
+    infoHTML += `<p style="color: #999; margin-top: 10px; font-size: 14px;">
+      Total: ${data.total_detections} detection(s)
     </p>`;
-    
-    // Show what classes are available if filter didn't match
-    if (data.filter_status === 'no_match' && data.detected_classes) {
-      infoHTML += `
-        <div style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 8px;">
-          <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">
-            💡 <strong>Tip:</strong> Model can detect:
-          </p>
-          <p style="margin: 0; font-size: 12px; color: #999;">
-            ${data.detected_classes.join(', ')}
-          </p>
-        </div>
-      `;
-    }
   } else {
-    infoHTML += '<p style="color: #999;">❌ No objects detected in the image.</p>';
-    
-    // Show model capabilities if available
-    if (data.detected_classes && data.detected_classes.length === 0) {
-      infoHTML += `
-        <p style="color: #666; font-size: 14px; margin-top: 10px;">
-          💡 Try taking a clearer photo or ensure the object is well-lit and in frame.
-        </p>
-      `;
-    }
+    // No detections
+    infoHTML += '<div style="padding: 15px; background: #f9f9f9; border-radius: 8px; text-align: center;">';
+    infoHTML += '<p style="color: #999; margin: 0;">❌ No objects detected in the image.</p>';
+    infoHTML += '<p style="color: #666; font-size: 14px; margin-top: 10px;">';
+    infoHTML += '💡 Try taking a clearer photo or ensure the object is well-lit and visible.';
+    infoHTML += '</p></div>';
   }
 
   detectionInfo.innerHTML = infoHTML;
@@ -218,3 +235,27 @@ function displayResults(data) {
     resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, 100);
 }
+
+// Optional: Add connection test function
+async function testConnection() {
+  try {
+    const response = await fetch(API_URL.replace('/analyze', '/health'));
+    const data = await response.json();
+    console.log('Backend health check:', data);
+    return data.status === 'ok';
+  } catch (error) {
+    console.error('Backend connection failed:', error);
+    return false;
+  }
+}
+
+// Test connection on page load
+window.addEventListener('DOMContentLoaded', () => {
+  testConnection().then(connected => {
+    if (connected) {
+      console.log('✓ Backend connected');
+    } else {
+      console.warn('⚠️ Backend not responding');
+    }
+  });
+});
