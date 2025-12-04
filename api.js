@@ -147,12 +147,14 @@ function displayResults(data) {
 
   console.log('🎨 Displaying results:', data);
 
-  // Show annotated image
-  if (data.annotated_image) {
+  // Show annotated image (if available)
+  if (data.annotated_image && data.annotated_image.trim() !== '') {
     const base64String = data.annotated_image.trim();
     
     // Remove data URL prefix if present
     const cleanBase64 = base64String.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    console.log('🖼️  Annotated image found, length:', cleanBase64.length);
     
     // Try PNG first (SAM3 mask visualizations are usually PNG)
     resultImage.src = `data:image/png;base64,${cleanBase64}`;
@@ -168,7 +170,12 @@ function displayResults(data) {
       resultImage.onerror = function() {
         console.error('❌ Failed to load annotated image');
         resultImage.style.display = 'none';
-        detectionInfo.innerHTML = '<p style="color: red;">⚠️ Could not load annotated image</p>';
+        
+        // Show error in detection info instead
+        const errorBox = document.createElement('div');
+        errorBox.style.cssText = 'padding: 15px; background: #fee; border-left: 4px solid #c33; border-radius: 8px; margin-bottom: 15px;';
+        errorBox.innerHTML = '<p style="margin: 0; color: #c33;">⚠️ Could not load annotated image. Image data may be corrupted.</p>';
+        detectionInfo.insertBefore(errorBox, detectionInfo.firstChild);
       };
     };
     
@@ -176,8 +183,15 @@ function displayResults(data) {
       console.log('✅ Annotated image loaded successfully');
     };
   } else {
-    console.warn('⚠️  No annotated_image in response');
+    console.warn('⚠️  No annotated_image in response or image is empty');
     resultImage.style.display = 'none';
+    
+    // Check if this is an expected "no detections" case
+    if (data.total_detections === 0) {
+      console.log('ℹ️  No detections found - this is expected');
+    } else {
+      console.error('❌ Detections exist but no visualization - workflow issue!');
+    }
   }
 
   // Display detection information
