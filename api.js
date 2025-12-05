@@ -178,3 +178,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!ok) console.warn('⚠️ Backend may not be reachable.');
   });
 });
+
+// At the bottom of api.js
+window.triggerFileUpload = triggerFileUpload;
+window.handleFileUpload = handleFileUpload;
+window.openCamera = openCamera;
+window.closeCamera = closeCamera;
+window.capturePhoto = capturePhoto;
