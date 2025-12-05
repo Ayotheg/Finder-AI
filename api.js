@@ -3,20 +3,20 @@ const API_URL = 'https://finder-backend-v1i2.onrender.com/api/analyze';
 
 let cameraStream = null;
 
-// --- File Upload ---
+// Trigger file upload dialog
 function triggerFileUpload() {
   document.getElementById('file-input').click();
 }
 
+// Handle file selection from upload
 async function handleFileUpload(event) {
   const file = event.target.files[0];
-  if (!file) return;
-
+  if (!file) return alert('No file selected.');
   const prompt = document.getElementById('search-prompt').value.trim();
   await sendImageToAPI(file, prompt);
 }
 
-// --- Camera ---
+// Open camera modal
 async function openCamera() {
   const modal = document.getElementById('camera-modal');
   const video = document.getElementById('camera-stream');
@@ -25,12 +25,13 @@ async function openCamera() {
     cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
     video.srcObject = cameraStream;
     modal.style.display = 'flex';
-  } catch (err) {
+  } catch (error) {
     alert('Unable to access camera. Check permissions.');
-    console.error('Camera error:', err);
+    console.error('Camera error:', error);
   }
 }
 
+// Close camera modal
 function closeCamera() {
   const modal = document.getElementById('camera-modal');
   const video = document.getElementById('camera-stream');
@@ -43,13 +44,17 @@ function closeCamera() {
   modal.style.display = 'none';
 }
 
+// Capture photo from camera
 async function capturePhoto() {
   const video = document.getElementById('camera-stream');
+  if (!video.videoWidth || !video.videoHeight) return alert('Camera not ready.');
+
   const canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
-  canvas.getContext('2d').drawImage(video, 0, 0);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   canvas.toBlob(async (blob) => {
     const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
@@ -60,22 +65,26 @@ async function capturePhoto() {
   }, 'image/jpeg', 0.95);
 }
 
-// --- Send to Backend ---
-async function sendImageToAPI(imageFile, prompt) {
+// Send image + prompt to backend
+async function sendImageToAPI(file, prompt) {
   const loading = document.getElementById('loading');
   const resultContainer = document.getElementById('result-container');
 
+  // Hide previous results & show loading
   resultContainer.style.display = 'none';
   if (loading) loading.style.display = 'flex';
 
   try {
     const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('prompt', prompt || 'all objects'); // backend default
+    formData.append('image', file);
+    formData.append('prompt', prompt || 'all objects');
 
-    console.log('📤 Sending request...', { prompt, file: imageFile.name });
+    console.log('📤 Sending request:', { prompt, file: file.name });
 
-    const response = await fetch(API_URL, { method: 'POST', body: formData });
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      body: formData
+    });
 
     if (!response.ok) {
       let errData;
@@ -84,34 +93,32 @@ async function sendImageToAPI(imageFile, prompt) {
       } catch {
         errData = { error: `HTTP ${response.status}: ${response.statusText}` };
       }
-      throw new Error(errData.error || 'Unknown API error');
+      throw new Error(errData.error || JSON.stringify(errData));
     }
 
     const result = await response.json();
     console.log('✅ Backend response:', result);
-
-    if (loading) loading.style.display = 'none';
     displayResults(result);
 
-  } catch (err) {
+  } catch (error) {
+    alert(`Error: ${error.message}`);
+    console.error('❌ Full error:', error);
+  } finally {
     if (loading) loading.style.display = 'none';
-    alert(`Error: ${err.message}`);
-    console.error('❌ Full error:', err);
   }
 }
 
-// --- Display Results ---
+// Display results
 function displayResults(data) {
   const resultContainer = document.getElementById('result-container');
   const resultImage = document.getElementById('result-image');
   const detectionInfo = document.getElementById('detection-info');
 
-  let infoHTML = '';
+  let html = '';
 
   // Annotated image
   if (data.annotated_image) {
-    const cleanBase64 = data.annotated_image.replace(/^data:image\/[a-z]+;base64,/, '');
-    resultImage.src = `data:image/png;base64,${cleanBase64}`;
+    resultImage.src = `data:image/png;base64,${data.annotated_image}`;
     resultImage.style.display = 'block';
   } else {
     resultImage.style.display = 'none';
@@ -119,45 +126,34 @@ function displayResults(data) {
 
   // Message
   if (data.message) {
-    const hasDetections = data.total_detections > 0;
-    const messageColor = hasDetections ? '#00FF7F' : '#ff9800';
-    const bgColor = hasDetections ? '#e8f5e9' : '#fff3e0';
-    const messageIcon = hasDetections ? '✅' : '⚠️';
-
-    infoHTML += `
-      <div style="padding:12px; margin-bottom:15px; border-left:4px solid ${messageColor}; background:${bgColor}; border-radius:8px;">
-        <p style="margin:0;">${messageIcon} ${data.message}</p>
-      </div>
-    `;
+    html += `<div style="padding:12px; margin-bottom:15px; border-left:4px solid #00FF7F; background:#e8f5e9; border-radius:8px;">
+               <p style="margin:0;">✅ ${data.message}</p>
+             </div>`;
   }
 
   // Detections
   if (data.detections && data.detections.length > 0) {
     data.detections.forEach(d => {
-      infoHTML += `
-        <div style="padding:12px; margin:8px 0; background:#f5f5f5; border-radius:8px; border-left:3px solid #00FF7F;">
-          <div style="display:flex; justify-content:space-between;">
-            <strong style="color:#00FF7F">${d.class}</strong>
-            <span style="color:#666">${(d.confidence*100).toFixed(1)}%</span>
-          </div>
-        </div>
-      `;
+      html += `<div style="padding:12px; margin:8px 0; background:#f5f5f5; border-radius:8px; border-left:3px solid #00FF7F;">
+                 <div style="display:flex; justify-content:space-between;">
+                   <strong style="color:#00FF7F">${d.class}</strong>
+                   <span style="color:#666">${(d.confidence*100).toFixed(1)}%</span>
+                 </div>
+               </div>`;
     });
-    infoHTML += `<p style="color:#999; text-align:center;">Total: ${data.total_detections} detection(s)</p>`;
+    html += `<p style="color:#999; text-align:center;">Total: ${data.total_detections} detection(s)</p>`;
   } else if (!data.annotated_image) {
-    infoHTML += `
-      <div style="padding:20px; background:#f9f9f9; border-radius:8px; text-align:center;">
-        <p style="color:#999;">❌ No objects detected</p>
-      </div>
-    `;
+    html += `<div style="padding:20px; background:#f9f9f9; border-radius:8px; text-align:center;">
+               <p style="color:#999;">❌ No objects detected</p>
+             </div>`;
   }
 
-  detectionInfo.innerHTML = infoHTML;
+  detectionInfo.innerHTML = html;
   resultContainer.style.display = 'block';
   setTimeout(() => resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
 }
 
-// --- Test Backend ---
+// Test backend connection
 async function testConnection() {
   try {
     const healthUrl = API_URL.replace('/analyze', '/health');
@@ -165,23 +161,16 @@ async function testConnection() {
     const data = await response.json();
     console.log('✅ Backend health:', data);
     return data.status === 'ok';
-  } catch (err) {
-    console.error('❌ Backend connection failed:', err);
+  } catch (error) {
+    console.error('❌ Backend connection failed:', error);
     return false;
   }
 }
 
-// --- Init ---
+// Initialize
 window.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 Finder AI frontend loaded');
   testConnection().then(ok => {
     if (!ok) console.warn('⚠️ Backend may not be reachable.');
   });
 });
-
-// At the bottom of api.js
-window.triggerFileUpload = triggerFileUpload;
-window.handleFileUpload = handleFileUpload;
-window.openCamera = openCamera;
-window.closeCamera = closeCamera;
-window.capturePhoto = capturePhoto;
