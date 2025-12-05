@@ -1,5 +1,6 @@
 // API Configuration
-const API_URL = 'https://finder-backend-v1i2.onrender.com/api/analyze';
+const API_URL = 'https://finder-backend-v1i2.onrender.com/predict';
+
 
 let cameraStream = null;
 
