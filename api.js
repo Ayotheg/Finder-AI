@@ -1,176 +1,211 @@
-// --- API Configuration ---
-const API_URL = 'https://finder-backend-v1i2.onrender.com/api/analyze';
+// ===============================
+// ✅ API URL
+// ===============================
+const API_URL = "https://finder-backend-v1i2.onrender.com/api/analyze";
 
 let cameraStream = null;
 
-// Trigger file upload dialog
+// ===============================
+// ✅ Trigger file upload
+// ===============================
 function triggerFileUpload() {
-  document.getElementById('file-input').click();
+  const input = document.getElementById("file-input");
+  if (input) input.click();
 }
 
-// Handle file selection from upload
+// ===============================
+// ✅ Handle file selection upload
+// ===============================
 async function handleFileUpload(event) {
   const file = event.target.files[0];
-  if (!file) return alert('No file selected.');
-  const prompt = document.getElementById('search-prompt').value.trim();
+  if (!file) return alert("No file selected.");
+
+  const prompt = document.getElementById("search-prompt").value.trim();
   await sendImageToAPI(file, prompt);
 }
 
-// Open camera modal
+// ===============================
+// ✅ Open Camera
+// ===============================
 async function openCamera() {
-  const modal = document.getElementById('camera-modal');
-  const video = document.getElementById('camera-stream');
+  const modal = document.getElementById("camera-modal");
+  const video = document.getElementById("camera-stream");
 
   try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+
     video.srcObject = cameraStream;
-    modal.style.display = 'flex';
-  } catch (error) {
-    alert('Unable to access camera. Check permissions.');
-    console.error('Camera error:', error);
+    modal.style.display = "flex";
+  } catch (err) {
+    console.error("Camera Error:", err);
+    alert("Camera access failed. Check permissions.");
   }
 }
 
-// Close camera modal
+// ===============================
+// ✅ Close Camera
+// ===============================
 function closeCamera() {
-  const modal = document.getElementById('camera-modal');
-  const video = document.getElementById('camera-stream');
+  const modal = document.getElementById("camera-modal");
+  const video = document.getElementById("camera-stream");
 
   if (cameraStream) {
     cameraStream.getTracks().forEach(track => track.stop());
     cameraStream = null;
   }
+
   video.srcObject = null;
-  modal.style.display = 'none';
+  modal.style.display = "none";
 }
 
-// Capture photo from camera
+// ===============================
+// ✅ Capture Photo from Camera
+// ===============================
 async function capturePhoto() {
-  const video = document.getElementById('camera-stream');
-  if (!video.videoWidth || !video.videoHeight) return alert('Camera not ready.');
+  const video = document.getElementById("camera-stream");
 
-  const canvas = document.createElement('canvas');
+  if (!video.videoWidth || !video.videoHeight) {
+    return alert("Camera not ready.");
+  }
+
+  const canvas = document.createElement("canvas");
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  canvas.toBlob(async (blob) => {
-    const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
-    const prompt = document.getElementById('search-prompt').value.trim();
+  canvas.toBlob(async blob => {
+    const file = new File([blob], "camera.jpg", { type: "image/jpeg" });
+    const prompt = document.getElementById("search-prompt").value.trim();
 
     closeCamera();
     await sendImageToAPI(file, prompt);
-  }, 'image/jpeg', 0.95);
+  }, "image/jpeg");
 }
 
-// Send image + prompt to backend
+// ===============================
+// ✅ Send Image + Prompt to Backend
+// ===============================
 async function sendImageToAPI(file, prompt) {
-  const loading = document.getElementById('loading');
-  const resultContainer = document.getElementById('result-container');
+  const loading = document.getElementById("loading");
+  const resultContainer = document.getElementById("result-container");
 
-  // Hide previous results & show loading
-  resultContainer.style.display = 'none';
-  if (loading) loading.style.display = 'flex';
+  resultContainer.style.display = "none";
+  if (loading) loading.style.display = "flex";
 
   try {
     const formData = new FormData();
-    formData.append('image', file);
-    formData.append('prompt', prompt || 'all objects');
 
-    console.log('📤 Sending request:', { prompt, file: file.name });
+    // 📌 These names MUST match your backend!
+    formData.append("image", file);
+    formData.append("prompt", prompt || "all objects");
+
+    console.log("📤 Sending to backend:", {
+      fileName: file.name,
+      prompt
+    });
 
     const response = await fetch(API_URL, {
-      method: 'POST',
+      method: "POST",
       body: formData
     });
 
-    if (!response.ok) {
-      let errData;
-      try {
-        errData = await response.json();
-      } catch {
-        errData = { error: `HTTP ${response.status}: ${response.statusText}` };
-      }
-      throw new Error(errData.error || JSON.stringify(errData));
+    const raw = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      throw new Error(`Invalid JSON: ${raw}`);
     }
 
-    const result = await response.json();
-    console.log('✅ Backend response:', result);
-    displayResults(result);
+    if (!response.ok) {
+      console.error("❌ API returned error:", data);
+      throw new Error(data.error || JSON.stringify(data));
+    }
+
+    console.log("✅ Success:", data);
+    displayResults(data);
 
   } catch (error) {
+    console.error("❌ FRONTEND ERROR:", error);
     alert(`Error: ${error.message}`);
-    console.error('❌ Full error:', error);
   } finally {
-    if (loading) loading.style.display = 'none';
+    if (loading) loading.style.display = "none";
   }
 }
 
-// Display results
+// ===============================
+// ✅ Display Results
+// ===============================
 function displayResults(data) {
-  const resultContainer = document.getElementById('result-container');
-  const resultImage = document.getElementById('result-image');
-  const detectionInfo = document.getElementById('detection-info');
+  const resultContainer = document.getElementById("result-container");
+  const resultImage = document.getElementById("result-image");
+  const detectionInfo = document.getElementById("detection-info");
 
-  let html = '';
+  let html = "";
 
-  // Annotated image
   if (data.annotated_image) {
     resultImage.src = `data:image/png;base64,${data.annotated_image}`;
-    resultImage.style.display = 'block';
+    resultImage.style.display = "block";
   } else {
-    resultImage.style.display = 'none';
+    resultImage.style.display = "none";
   }
 
-  // Message
   if (data.message) {
-    html += `<div style="padding:12px; margin-bottom:15px; border-left:4px solid #00FF7F; background:#e8f5e9; border-radius:8px;">
-               <p style="margin:0;">✅ ${data.message}</p>
-             </div>`;
+    html += `
+      <div style="padding:12px; margin-bottom:15px; border-left:4px solid #00FF7F; background:#e8f5e9; border-radius:8px;">
+        <p style="margin:0;">✅ ${data.message}</p>
+      </div>
+    `;
   }
 
-  // Detections
-  if (data.detections && data.detections.length > 0) {
+  if (data.detections?.length > 0) {
     data.detections.forEach(d => {
-      html += `<div style="padding:12px; margin:8px 0; background:#f5f5f5; border-radius:8px; border-left:3px solid #00FF7F;">
-                 <div style="display:flex; justify-content:space-between;">
-                   <strong style="color:#00FF7F">${d.class}</strong>
-                   <span style="color:#666">${(d.confidence*100).toFixed(1)}%</span>
-                 </div>
-               </div>`;
+      html += `
+        <div style="padding:12px; margin:8px 0; background:#f5f5f5; border-radius:8px; border-left:3px solid #00FF7F;">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="color:#00FF7F">${d.class}</strong>
+            <span style="color:#666">${(d.confidence * 100).toFixed(1)}%</span>
+          </div>
+        </div>
+      `;
     });
-    html += `<p style="color:#999; text-align:center;">Total: ${data.total_detections} detection(s)</p>`;
-  } else if (!data.annotated_image) {
-    html += `<div style="padding:20px; background:#f9f9f9; border-radius:8px; text-align:center;">
-               <p style="color:#999;">❌ No objects detected</p>
-             </div>`;
+
+    html += `<p style="text-align:center; color:#777;">Total: ${data.total_detections}</p>`;
+  } else {
+    html += `
+      <div style="padding:20px; background:#f9f9f9; border-radius:8px; text-align:center;">
+        <p style="color:#999;">❌ No objects detected</p>
+      </div>
+    `;
   }
 
   detectionInfo.innerHTML = html;
-  resultContainer.style.display = 'block';
-  setTimeout(() => resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  resultContainer.style.display = "block";
 }
 
-// Test backend connection
+// ===============================
+// ✅ Test backend connection
+// ===============================
 async function testConnection() {
   try {
-    const healthUrl = API_URL.replace('/analyze', '/health');
-    const response = await fetch(healthUrl);
-    const data = await response.json();
-    console.log('✅ Backend health:', data);
-    return data.status === 'ok';
-  } catch (error) {
-    console.error('❌ Backend connection failed:', error);
-    return false;
+    const healthUrl = API_URL.replace("/analyze", "/health");
+    const res = await fetch(healthUrl);
+    const json = await res.json();
+    console.log("Backend health:", json);
+  } catch (err) {
+    console.warn("⚠️ Cannot reach backend", err);
   }
 }
 
-// Initialize
-window.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Finder AI frontend loaded');
-  testConnection().then(ok => {
-    if (!ok) console.warn('⚠️ Backend may not be reachable.');
-  });
+// ===============================
+// ✅ Initialize
+// ===============================
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 Finder AI frontend loaded");
+  testConnection();
 });
