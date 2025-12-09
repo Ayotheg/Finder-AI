@@ -97,23 +97,34 @@ async function sendImageToAPI(file, prompt) {
   if (loading) loading.style.display = "flex";
 
   try {
+    // ✅ FIX: Create FormData properly
     const formData = new FormData();
-
-    // 📌 These names MUST match your backend!
-    formData.append("image", file);
+    
+    // CRITICAL: Append the actual file object, not empty FormData
+    formData.append("image", file, file.name);
     formData.append("prompt", prompt || "all objects");
 
     console.log("📤 Sending to backend:", {
       fileName: file.name,
-      prompt
+      fileSize: file.size,
+      fileType: file.type,
+      prompt: prompt || "all objects"
     });
+
+    // ✅ Verify FormData has content
+    console.log("FormData entries:");
+    for (let [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
 
     const response = await fetch(API_URL, {
       method: "POST",
       body: formData
+      // ✅ Don't set Content-Type header - browser sets it automatically with boundary
     });
 
     const raw = await response.text();
+    console.log("📥 Raw response:", raw);
 
     let data;
     try {
@@ -124,7 +135,7 @@ async function sendImageToAPI(file, prompt) {
 
     if (!response.ok) {
       console.error("❌ API returned error:", data);
-      throw new Error(data.error || JSON.stringify(data));
+      throw new Error(data.error || data.details || JSON.stringify(data));
     }
 
     console.log("✅ Success:", data);
@@ -196,7 +207,7 @@ async function testConnection() {
     const healthUrl = API_URL.replace("/analyze", "/health");
     const res = await fetch(healthUrl);
     const json = await res.json();
-    console.log("Backend health:", json);
+    console.log("✅ Backend health:", json);
   } catch (err) {
     console.warn("⚠️ Cannot reach backend", err);
   }
